@@ -1,7 +1,7 @@
 version: '3.8'
 services:
   arkose-token-service:
-    build: .
+    image: wizerd/generate-arkose:latest
     ports:
       - "23888:8080"
     volumes:
