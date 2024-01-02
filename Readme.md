@@ -2,6 +2,10 @@
 
 本项目为 [funcaptcha](https://github.com/acheong08/funcaptcha) 项目的Web实现，支持兼容PandoraNext格式的Arkose Token生成。
 
+> [!WARNING]
+>
+> 本项目不保证生成的Arkose的可用性以及使用本项目不会导致封号等一系列问题，使用本项目造成的一切后果由使用者自行承担。
+
 ## 使用方法
 
 1. 拉取项目至本地
