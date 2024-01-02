@@ -20,11 +20,9 @@
 
 ```
 POST http://<ip>:23888/api/arkose/token
-
-{
-    "type": "gpt-4"
-}
 ```
+请求体格式：application/x-www-form-urlencoded
+参数：`type`: `gpt-4`
 
 响应示例：
 

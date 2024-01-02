@@ -1,12 +1,14 @@
 package main
 
 import (
+    "fmt"
     "github.com/acheong08/funcaptcha"
     "github.com/gin-gonic/gin"
+    "net/http"
 )
 
 type TokenRequest struct {
-    Type string `json:"type"`
+    Type string `form:"type"`
 }
 
 func main() {
@@ -14,18 +16,20 @@ func main() {
 
     router.POST("/api/arkose/token", func(c *gin.Context) {
         var req TokenRequest
-        if err := c.BindJSON(&req); err != nil {
-            c.JSON(400, gin.H{"error": "bad request"})
+        // 使用 ShouldBind 方法来绑定 x-www-form-urlencoded 数据
+        if err := c.ShouldBind(&req); err != nil {
+            fmt.Println(err)
+            c.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
             return
         }
 
-        // 创建Solver实例
+        // 创建 Solver 实例
         solver := funcaptcha.NewSolver()
 
-        // 加载HAR文件，这里需要提供包含HAR文件的目录路径
+        // 加载 HAR 文件，这里需要提供包含 HAR 文件的目录路径
         funcaptcha.WithHarpool(solver)
 
-        // 根据请求的类型选择arkType
+        // 根据请求的类型选择 arkType
         arkType := funcaptcha.ArkVerAuth
         switch req.Type {
         case "gpt-4":
@@ -36,15 +40,15 @@ func main() {
             arkType = funcaptcha.ArkVerAuth
         }
 
-        // 调用GetOpenAIToken方法
+        // 调用 GetOpenAIToken 方法
         token, err := solver.GetOpenAIToken(arkType, "")
         if err != nil {
-            c.JSON(500, gin.H{"error": err.Error()})
+            c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
             return
         }
 
-        // 将token放到JSON响应的token字段里
-        c.JSON(200, gin.H{"token": token})
+        // 将 token 放到 JSON 响应的 token 字段里
+        c.JSON(http.StatusOK, gin.H{"token": token})
     })
 
     router.Run(":8080")
