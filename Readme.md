@@ -6,9 +6,11 @@
 
 1. 拉取项目至本地
 
-2. 根据Ninja项目中的[Har获取说明](https://github.com/gngpp/ninja/blob/main/doc/readme_zh.md#arkoselabs)下载Har文件至`harPool`文件夹下
+2. 新建`harPool`文件夹
 
-3. 启动项目，`docker-compose up -d`
+3. 根据Ninja项目中的[Har获取说明](https://github.com/gngpp/ninja/blob/main/doc/readme_zh.md#arkoselabs)下载Har文件至`harPool`文件夹下
+
+4. 启动项目，`docker-compose up -d`
 
 请求示例：
 
