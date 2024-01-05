@@ -2,54 +2,107 @@ package main
 
 import (
     "fmt"
+    "context"
     "github.com/acheong08/funcaptcha"
     "github.com/gin-gonic/gin"
+    "github.com/go-redis/redis/v8"
     "net/http"
+    "os"
+    "strconv"
+    "time"
 )
 
-type TokenRequest struct {
-    Type string `form:"type"`
+var redisClient *redis.Client
+var ctx = context.Background()
+
+func initRedis() {
+    // 从环境变量获取 Redis 的地址和端口
+    redisHost := os.Getenv("REDIS_HOST")
+    if redisHost == "" {
+        redisHost = "redis" // 如果没有设置，默认为 localhost
+    }
+
+    redisPort := os.Getenv("REDIS_PORT")
+    if redisPort == "" {
+        redisPort = "6379" // 如果没有设置，默认为 6379 端口
+    }
+
+    redisAddr := fmt.Sprintf("%s:%s", redisHost, redisPort)
+
+    // 创建一个新的 Redis 客户端
+    redisClient = redis.NewClient(&redis.Options{
+        Addr: redisAddr,
+        // 如果你的 Redis 设置了密码，你也需要在这里配置
+        // Password: "yourpassword", 
+        DB: 0, // 默认使用数据库 0
+    })
+}
+
+func checkAndGenerateTokens() {
+    for {
+        // 获取环境变量中设置的 token 阈值
+        minTokenCount, _ := strconv.Atoi(os.Getenv("MIN_TOKEN_COUNT"))
+
+        // 从环境变量获取 token 过期时间
+        tokenExpiryMinutes, _ := strconv.Atoi(os.Getenv("TOKEN_EXPIRY_MINUTES"))
+        if tokenExpiryMinutes == 0 {
+            tokenExpiryMinutes = 25  // 如果没有设置或设置错误，默认为 25 分钟
+        }
+
+        // 获取 Redis 中的 token 数量
+        size, err := redisClient.DBSize(ctx).Result()
+        if err != nil {
+            fmt.Println("Error getting token count from Redis:", err)
+            continue
+        }
+
+        // 如果 token 数量小于阈值，则生成并存储新的 token
+        if int(size) < minTokenCount {
+            solver := funcaptcha.NewSolver()
+            funcaptcha.WithHarpool(solver)
+            token, err := solver.GetOpenAIToken(funcaptcha.ArkVerChat4, "")
+            if err != nil {
+                fmt.Println("Error generating token:", err)
+                continue
+            }
+
+            // 将 token 存入 Redis，并设置过期时间
+            err = redisClient.Set(ctx, "token:"+token, token, time.Duration(tokenExpiryMinutes)*time.Minute).Err()
+            if err != nil {
+                fmt.Println("Error saving token to Redis:", err)
+            }
+        }
+
+        // 每秒检查一次
+        time.Sleep(1 * time.Second)
+    }
 }
 
 func main() {
     router := gin.Default()
+    initRedis()
+
+    // 启动后台 goroutine 来检查和生成 token
+    go checkAndGenerateTokens()
 
     router.POST("/api/arkose/token", func(c *gin.Context) {
-        var req TokenRequest
-        // 使用 ShouldBind 方法来绑定 x-www-form-urlencoded 数据
-        if err := c.ShouldBind(&req); err != nil {
-            fmt.Println(err)
-            c.JSON(http.StatusBadRequest, gin.H{"error": "bad request"})
+        // 尝试从 Redis 获取一个 token
+        token, err := redisClient.RandomKey(ctx).Result()
+        if err != nil || token == "" {
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "no token available"})
             return
         }
-
-        // 创建 Solver 实例
-        solver := funcaptcha.NewSolver()
-
-        // 加载 HAR 文件，这里需要提供包含 HAR 文件的目录路径
-        funcaptcha.WithHarpool(solver)
-
-        // 根据请求的类型选择 arkType
-        arkType := funcaptcha.ArkVerAuth
-        switch req.Type {
-        case "gpt-4":
-            arkType = funcaptcha.ArkVerChat4
-        case "gpt-3":
-            arkType = funcaptcha.ArkVerChat3
-        default:
-            arkType = funcaptcha.ArkVerAuth
+    
+        // 从 Redis 中删除获取到的 token
+        _, delErr := redisClient.Del(ctx, token).Result()
+        if delErr != nil {
+            fmt.Println("Error deleting token from Redis:", delErr)
         }
-
-        // 调用 GetOpenAIToken 方法
-        token, err := solver.GetOpenAIToken(arkType, "")
-        if err != nil {
-            c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-            return
-        }
-
-        // 将 token 放到 JSON 响应的 token 字段里
+    
+        // 返回获取到的 token
         c.JSON(http.StatusOK, gin.H{"token": token})
     })
+    
 
     router.Run(":8080")
 }
