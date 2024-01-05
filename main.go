@@ -10,6 +10,7 @@ import (
     "os"
     "strconv"
     "time"
+    "strings"
 )
 
 var redisClient *redis.Client
@@ -87,21 +88,25 @@ func main() {
 
     router.POST("/api/arkose/token", func(c *gin.Context) {
         // 尝试从 Redis 获取一个 token
-        token, err := redisClient.RandomKey(ctx).Result()
-        if err != nil || token == "" {
+        key, err := redisClient.RandomKey(ctx).Result()
+        if err != nil || key == "" {
             c.JSON(http.StatusInternalServerError, gin.H{"error": "no token available"})
             return
         }
     
         // 从 Redis 中删除获取到的 token
-        _, delErr := redisClient.Del(ctx, token).Result()
+        _, delErr := redisClient.Del(ctx, key).Result()
         if delErr != nil {
             fmt.Println("Error deleting token from Redis:", delErr)
         }
     
+        // 去除 "token:" 前缀
+        token := strings.TrimPrefix(key, "token:")
+    
         // 返回获取到的 token
         c.JSON(http.StatusOK, gin.H{"token": token})
     })
+    
     
 
     router.Run(":8080")
