@@ -11,9 +11,11 @@ WORKDIR /app
 COPY ./main.go /app/main.go
 
 # 克隆funcaptcha库的最新代码
-# RUN git clone https://github.com/acheong08/funcaptcha.git
+RUN git clone https://github.com/acheong08/funcaptcha.git
 
-COPY ./funcaptcha /app/funcaptcha
+# COPY ./funcaptcha /app/funcaptcha
+COPY ./api.go /app/funcaptcha/api.go
+COPY ./funcaptcha.go /app/funcaptcha/funcaptcha.go
 
 # 初始化Go模块并添加funcaptcha依赖
 RUN go mod init arkose && go mod edit -require=github.com/acheong08/funcaptcha@latest
