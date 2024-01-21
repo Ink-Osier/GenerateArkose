@@ -16,7 +16,6 @@ import (
 	http "github.com/bogdanfinn/fhttp"
 )
 
-// 从环境变量获取
 var arkPreURL = os.Getenv("ARK_PRE_URL")
 
 var arkURLIns, _ = url.Parse(arkPreURL)
@@ -57,15 +56,6 @@ type logData struct {
 }
 type HARData struct {
 	Log logData `json:"log"`
-}
-
-func SetArkPreURL(arkurl string) {
-	arkPreURL = arkurl
-	arkURLIns, _ = url.Parse(arkPreURL)
-}
-
-func GetArkPreURL() string {
-	return arkPreURL
 }
 
 func (s *Solver) GetOpenAIToken(version arkVer, puid string) (string, error) {

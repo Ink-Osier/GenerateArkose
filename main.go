@@ -76,6 +76,9 @@ func checkAndGenerateTokens() {
 
         // 如果 token 数量小于阈值，则生成并存储新的 token
         if int(size) < minTokenCount {
+            message := fmt.Sprintf("Current token count: %d is less than min token count: %d, generating new tokens...", size, minTokenCount)
+            fmt.Println(message)
+
             solver := funcaptcha.NewSolver()
             funcaptcha.WithHarpool(solver)
             token, err := solver.GetOpenAIToken(funcaptcha.ArkVerChat4, "")
@@ -99,14 +102,6 @@ func checkAndGenerateTokens() {
 func main() {
     router := gin.Default()
     initRedis()
-
-    // 检查环境变量并设置默认值
-    if os.Getenv("ARK_PRE_URL") == "" {
-        funcaptcha.SetArkPreURL("https://chat.oaifree.com/fc/gt2/")
-        fmt.Println("ARK_PRE_URL not set, using default value:", funcaptcha.GetArkPreURL())
-    } else {
-        fmt.Println("ARK_PRE_URL set to:", funcaptcha.GetArkPreURL())
-    }
 
     // 启动后台 goroutine 来检查和生成 token
     go checkAndGenerateTokens()

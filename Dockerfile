@@ -23,6 +23,8 @@ RUN go mod init arkose && go mod edit -require=github.com/acheong08/funcaptcha@l
 # 使用replace指令引用本地funcaptcha库
 RUN echo "replace github.com/acheong08/funcaptcha => ./funcaptcha" >> go.mod
 
+ENV ARK_PRE_URL=https://tcr9i.chat.openai.com/fc/gt2/
+
 # 清除模块缓存
 RUN go clean -modcache
 # 处理所有依赖
@@ -40,6 +42,8 @@ FROM alpine
 
 # 从构建器镜像中复制构建好的应用
 COPY --from=builder /arkose-token-service /arkose-token-service
+
+ENV ARK_PRE_URL=https://tcr9i.chat.openai.com/fc/gt2/
 
 # 声明服务运行在哪个端口
 EXPOSE 8080

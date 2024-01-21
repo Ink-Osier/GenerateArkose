@@ -15,6 +15,6 @@ services:
     environment:
       - MIN_TOKEN_COUNT=5  # Arkose Token池中的最小Token数量
       - TOKEN_EXPIRY_MINUTES=25  # Arkose Token的有效期，单位为分钟
-      - ARK_PRE_URL=https://chat.oaifree.com/fc/gt2/
+      # - ARK_PRE_URL=https://chat.oaifree.com/fc/gt2/
     depends_on:
       - redis  # 确保在应用服务启动前 Redis 服务已经运行
