@@ -138,6 +138,7 @@ func WithHarData(harData HARData) solverArg {
 				}
 				if tmpArk.arkBx != "" {
 					println("success read " + arkType + " arkose from " + arkPreURL)
+					break
 				} else {
 					println("failed to decrypt HAR file")
 				}
