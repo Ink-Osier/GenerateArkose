@@ -30,13 +30,30 @@ func initRedis() {
 
     redisAddr := fmt.Sprintf("%s:%s", redisHost, redisPort)
 
-    // 创建一个新的 Redis 客户端
-    redisClient = redis.NewClient(&redis.Options{
+    redisDBStr := os.Getenv("REDIS_DB")
+    redisDB := 0 // 默认为 0 号数据库
+    if redisDBStr != "" {
+        var err error
+        redisDB, err = strconv.Atoi(redisDBStr)
+        if err != nil {
+            fmt.Println("Error parsing REDIS_DB:", err)
+        }
+    }
+
+    redisPassword := os.Getenv("REDIS_PASSWORD")
+
+    // 创建 Redis 客户端的配置
+    opts := &redis.Options{
         Addr: redisAddr,
-        // 如果你的 Redis 设置了密码，你也需要在这里配置
-        // Password: "yourpassword", 
-        DB: 0, // 默认使用数据库 0
-    })
+        DB:   redisDB,
+    }
+
+    if redisPassword != "" {
+        opts.Password = redisPassword
+    }
+
+    // 创建一个新的 Redis 客户端
+    redisClient = redis.NewClient(opts)
 }
 
 func checkAndGenerateTokens() {
@@ -82,6 +99,14 @@ func checkAndGenerateTokens() {
 func main() {
     router := gin.Default()
     initRedis()
+
+    // 检查环境变量并设置默认值
+    if os.Getenv("ARK_PRE_URL") == "" {
+        funcaptcha.SetArkPreURL("https://chat.oaifree.com/fc/gt2/")
+        fmt.Println("ARK_PRE_URL not set, using default value:", funcaptcha.GetArkPreURL())
+    } else {
+        fmt.Println("ARK_PRE_URL set to:", funcaptcha.GetArkPreURL())
+    }
 
     // 启动后台 goroutine 来检查和生成 token
     go checkAndGenerateTokens()
